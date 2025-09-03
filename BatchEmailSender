@@ -1,0 +1,21 @@
+global class BatchEmailSender implements Database.Batchable<sObject>, Schedulable {
+    global Database.QueryLocator start(Database.BatchableContext BC) {
+        return Database.getQueryLocator('SELECT Id, Email FROM Contact WHERE Receive_Report__c = TRUE AND Email != null');
+    }
+
+    global void execute(Database.BatchableContext BC, List<Contact> scope) {
+        List<String> emails = new List<String>();
+        for (Contact c : scope) {
+            emails.add(c.Email);
+        }
+        if (!emails.isEmpty()) {
+            EmailFuture.sendEmails(emails);
+        }
+    }
+
+    global void finish(Database.BatchableContext BC) {}
+
+    global void execute(SchedulableContext sc) {
+        Database.executeBatch(new BatchEmailSender(), 200);
+    }
+}
